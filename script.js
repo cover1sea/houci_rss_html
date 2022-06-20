@@ -1,5 +1,5 @@
 function getRSS(path){
-    var req = new XMLHttpRequest();
+    let req = new XMLHttpRequest();
     req.open("get", path, true);
     req.send(null);
 
@@ -9,36 +9,64 @@ function getRSS(path){
     }
 }
 
-function createDisplayData(rss){
-    document.querySelector("#lastBuildDate").textContent = "最終更新日：" + rss.querySelector("lastBuildDate").textContent;
+function createIndexNo(length, p_no){
+    let index = document.querySelector("#indexno");
+    let index2 = document.querySelector("#indexno2");
 
-    list = rss.querySelectorAll("item");
+    index.innerHTML = "";
+    index2.innerHTML = "";
+    for(let j=0; j<length; j++){
+        if(j!=p_no){
+            htmlstr = "<a href='#p-" + j +"' onclick=initialize()>" + (j+1) + "</a>&nbsp;";
+        }
+        else{
+            htmlstr = (j+1) + "&nbsp;";
+        }
+        index.innerHTML += htmlstr;
+        index2.innerHTML += htmlstr;
+    }
+}
 
-    list.forEach(element =>{
-        title_text = element.querySelector("title").textContent;
-        date_text = element.querySelector("pubDate").textContent;
-        desc_text = element.querySelector("description").textContent.replace(/data-src/g, "src");
-        id_text = element.querySelector("guid").textContent.split("#")[1];
+
+function createDisplayDataPerPage(list, p_no){
+    
+    let lists_length = Math.ceil(list.length/5.0);
+    let lists = new Array(lists_length).fill().map((_, i) => list.slice(i * 5, (i+1)*5));
+
+    if(p_no>=lists_length){
+        p_no=0;
+    }
+
+    createIndexNo(lists_length, p_no);
+    // 記事生成
+    let j=0;
+    document.querySelector("#main").innerHTML ="";
+    lists[p_no].forEach(element =>{
+    //lists.forEach(element =>{
+        if(j==1){
+            document.querySelector("#main").innerHTML = document.querySelector("#main").innerHTML+ document.querySelector("#othercont").outerHTML;
+        }
+        j+=1;
+        let title_text = element.querySelector("title").textContent;
+        let date_text = element.querySelector("pubDate").textContent;
+        let desc_text = element.querySelector("description").textContent.replace(/data-src/g, "loading='lazy' src");
+        let id_text = element.querySelector("guid").textContent.split("#")[1];
         
-        date_l = date_text.split(" ");
-        index_link = "<li>"+date_l[3] + "/"+ date_l[2] + "/" + date_l[1] +"：<a href='#n-" + id_text +"'>" + title_text +"</a></li>";
-        document.querySelector("#mokuji ul").innerHTML = document.querySelector("#mokuji ul").innerHTML + index_link;
-
-        item = document.createElement("div");
+        let item = document.createElement("div");
         item.setAttribute("class", "content");
         item.setAttribute("id", "n-"+id_text)
 
-        title = document.createElement("div");
+        let title = document.createElement("div");
         title.setAttribute("class", "content-title");
         title.innerHTML = "<h2>" + title_text + "</h2>";
         item.insertAdjacentElement("beforeend", title);
 
-        date = document.createElement("div");
+        let date = document.createElement("div");
         date.setAttribute("class", "content-pubdate");
         date.innerHTML = "<p>投稿日：" + date_text + "</p>";
         item.insertAdjacentElement("beforeend", date);
 
-        desc = document.createElement("div");
+        let desc = document.createElement("div");
         desc.setAttribute("class", "content-desc");
         desc.innerHTML = desc_text;
         desc.querySelectorAll(".content-div-word").forEach(div =>{
@@ -55,11 +83,95 @@ function createDisplayData(rss){
 
         main_d = document.querySelector("#main").insertAdjacentElement("beforeend",item);
     })
+}
+function createDisplayData(rss){
+    document.querySelector("#lastBuildDate").textContent = "最終更新日：" + rss.querySelector("lastBuildDate").textContent;
 
+    let list = Array.from(rss.querySelectorAll("item"));
+
+    // index 生成
+    list.forEach(element =>{
+        let title_text = element.querySelector("title").textContent;
+        let date_text = element.querySelector("pubDate").textContent;
+        let id_text = element.querySelector("guid").textContent.split("#")[1];
+        
+        let date_l = date_text.split(" ");
+        let index_link = "<li>"+date_l[3] + "/"+ date_l[2] + "/" + date_l[1] +"：<a href='#n-" + id_text +"' onclick='refreshContent()'>" + title_text +"</a></li>";
+        document.querySelector("#mokuji ul").innerHTML = document.querySelector("#mokuji ul").innerHTML + index_link;
+    })
+
+    // #で処理制御
+    let p_no=0;
+    let hashstr = location.hash;
+    if(hashstr.match(/p-/)){
+        p_no= parseInt(hashstr.match(/\d+/));
+    }
+    else if(hashstr.match(/n-/)){
+        refreshContent();
+        return;
+    }
+    createDisplayDataPerPage(list, p_no);
 }
 
 function initialize(){
     getRSS("houchi_news.xml")
+}
+
+function refreshContent(){
+    let req = new XMLHttpRequest();
+    req.open("get", "houchi_news.xml", true);
+    req.send(null);
+
+    req.onload = function(){
+        rss = req.responseXML;
+
+        let list = rss.querySelectorAll("item");
+    
+        let i = 0;
+        let hashstr = location.hash;
+        if(hashstr.match(/n-/)){
+            list.forEach(element =>{
+                if(hashstr.match(/\d+/) == element.querySelector("guid").textContent.split("#")[1]){
+                    let title_text = element.querySelector("title").textContent;
+                    let date_text = element.querySelector("pubDate").textContent;
+                    let desc_text = element.querySelector("description").textContent.replace(/data-src/g, "src");
+                    let id_text = element.querySelector("guid").textContent.split("#")[1];
+                    
+                    let item = document.createElement("div");
+                    item.setAttribute("class", "content");
+                    item.setAttribute("id", "n-"+id_text)
+            
+                    let title = document.createElement("div");
+                    title.setAttribute("class", "content-title");
+                    title.innerHTML = "<h2>" + title_text + "</h2>";
+                    item.insertAdjacentElement("beforeend", title);
+            
+                    let date = document.createElement("div");
+                    date.setAttribute("class", "content-pubdate");
+                    date.innerHTML = "<p>投稿日：" + date_text + "</p>";
+                    item.insertAdjacentElement("beforeend", date);
+            
+                    let desc = document.createElement("div");
+                    desc.setAttribute("class", "content-desc");
+                    desc.innerHTML = desc_text;
+                    desc.querySelectorAll(".content-div-word").forEach(div =>{
+                        p = document.createElement("p");
+                        p.innerHTML = "<span class='word'>" + div.innerHTML +"</span>";
+                        div.innerHTML = p.outerHTML;
+                    });
+                    desc.querySelectorAll(".content-div-title").forEach(div =>{
+                        p = document.createElement("p");
+                        p.innerHTML = "<span class='title'>" + div.innerHTML +"</span>";
+                        div.innerHTML = p.outerHTML;
+                    });
+                    item.insertAdjacentElement("beforeend", desc);
+            
+                    main_d = document.querySelector("#main").innerHTML = item.outerHTML;
+                }
+            })
+        }
+    }
+
 }
 
 window.onload = initialize()
