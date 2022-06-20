@@ -50,6 +50,11 @@ a:hover{
 #footer{
     text-align: center;
 }
+#othercont{
+    width:90%;
+    margin: 0 auto;
+    text-align: center;
+}
 .content-pubdate{
     font-size:90%;
     color:#2c4f54;
@@ -71,6 +76,11 @@ a:hover{
     font-size:110%;
     color:#0d0015;
     background: linear-gradient(rgba(254,253,99,0) 70%, #fef263 70%);
+}
+
+.indexn{
+    margin-top:3px;
+    text-align: center;
 }
 img{
     max-width:80%;
